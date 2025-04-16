@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CO2 Sensor - Control</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+
+    <style>
+        html,
+        body {
+            height: 100%;
+        }
+
+        .form-contrast {
+            max-width: 400px;
+            padding: 1rem;
+        }
+    </style>
+</head>
+
+<body class="d-flex align-items-center py-4 bg-light">
+    <main class="form-contrast w-100 m-auto">
+        <h1 class="h3 mb-3 fw-normal">Display contrast</h1>
+        <form id="contrastForm">
+            <div class="mb-3">
+                <label for="contrastRange" class="form-label">Value: <span id="contrastValue">4</span></label>
+                <input type="range" class="form-range" min="0" max="255" id="contrastRange" value="4">
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-primary flex-grow-1" id="connectBtn">Connect</button>
+            </div>
+        </form>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq"
+        crossorigin="anonymous"></script>
+    <script>
+        const connectBtn = document.getElementById('connectBtn');
+        const contrastRange = document.getElementById('contrastRange');
+        const contrastValue = document.getElementById('contrastValue');
+
+
+        function debounce(func, wait, options = { leading: false, trailing: true }) {
+            let timeoutId;
+            let lastArgs;
+            let lastThis;
+            let result;
+
+            function debounced(...args) {
+                lastArgs = args;
+                lastThis = this;
+
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                }
+
+                if (options.leading && !timeoutId) {
+                    result = func.apply(lastThis, lastArgs);
+                }
+
+                timeoutId = setTimeout(() => {
+                    if (options.trailing && lastArgs) {
+                        result = func.apply(lastThis, lastArgs);
+                    }
+                    timeoutId = null;
+                }, wait);
+
+                return result;
+            }
+
+            debounced.cancel = function () {
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                    lastArgs = null;
+                }
+            };
+
+            return debounced;
+        }
+
+        let port;
+        async function readSerialData() {
+            const reader = port.readable.getReader();
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+
+                const message = new TextDecoder().decode(value);
+                console.log(message);
+            }
+        }
+
+
+        connectBtn.addEventListener("click", async () => {
+            try {
+                port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 115200 });
+
+                readSerialData();
+            }
+            catch (err) {
+                console.error("Ошибка при запросе порта:", err);
+                return;
+            }
+        })
+
+
+
+        const sendContrastDebounced = debounce(
+            (value) => {
+                if (!port) {
+                    console.warn("Сначала подключите устройство");
+                    return;
+                }
+                const writer = port.writable.getWriter();
+                writer.write(new TextEncoder().encode(`set_contrast ${value}\n`))
+                    .then(() => writer.releaseLock())
+                    .catch(err => console.error(err));
+                console.log(`Отправлено: set_contrast ${value}`);
+            },
+            300, // Задержка 300 мс
+            { leading: false, trailing: true } // Выполнять только после задержки
+        );
+
+        contrastRange.addEventListener('input', () => {
+            const value = contrastRange.value;
+            contrastValue.textContent = value;
+            sendContrastDebounced(value); // Вызов с debounce
+        });
+    </script>
+</body>
+
+</html>

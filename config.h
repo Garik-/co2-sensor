@@ -37,5 +37,6 @@ namespace Config
         constexpr uint16_t STACK_SIZE = 3072;
         constexpr uint8_t SENSOR_PRIORITY = 2;
         constexpr uint8_t DISPLAY_PRIORITY = 1;
+        constexpr uint8_t SERIAL_PRIORITY = 1;
     }
 }
