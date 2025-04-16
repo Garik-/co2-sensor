@@ -5,27 +5,108 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include "Org_01.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/queue.h>
+#include "config.h"
 
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+static const unsigned char PROGMEM image_co2__2__bits[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xf8, 0x00, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfc, 0x00, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfc, 0x00, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfc, 0x00, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfc, 0x00, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfc, 0x07, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfc, 0x1f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfc, 0x1f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfc, 0x38, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xfc, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xfc, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xfc, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xfc, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xfc, 0x30, 0x03, 0xfc, 0x1f, 0xe0, 0x00, 0x03, 0xfc, 0x30, 0x03, 0xfe, 0x3f, 0xf0, 0x00, 0x03, 0xfc, 0x30, 0x07, 0x06, 0x30, 0x30, 0x00, 0x03, 0xfc, 0x30, 0x06, 0x06, 0x30, 0x30, 0x00, 0x03, 0xfc, 0x30, 0x06, 0x00, 0x30, 0x30, 0x00, 0x03, 0xfc, 0x30, 0x06, 0x00, 0x30, 0x30, 0x00, 0x03, 0xfc, 0x30, 0x06, 0x00, 0x30, 0x30, 0x00, 0x03, 0xfc, 0x30, 0x06, 0x00, 0x30, 0x30, 0x00, 0x03, 0xfc, 0x30, 0x06, 0x00, 0x30, 0x30, 0x00, 0x03, 0xfc, 0x30, 0x06, 0x06, 0x30, 0x31, 0xf0, 0x03, 0xfc, 0x30, 0x07, 0x0e, 0x38, 0x73, 0xf8, 0x03, 0xfc, 0x30, 0x03, 0xfe, 0x1f, 0xe3, 0x18, 0x03, 0xfc, 0x30, 0x01, 0xf8, 0x0f, 0xc0, 0x18, 0x03, 0xfc, 0x30, 0x00, 0x00, 0x00, 0x00, 0x38, 0x03, 0xfc, 0x30, 0x00, 0x00, 0x00, 0x00, 0x70, 0x03, 0xfc, 0x30, 0x00, 0x00, 0x00, 0x00, 0xe0, 0x03, 0xfc, 0x30, 0x00, 0x00, 0x00, 0x01, 0xf8, 0x03, 0xfc, 0x30, 0x00, 0x00, 0x00, 0x00, 0xf8, 0x03, 0xf8, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x38, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x1f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x0f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-#define I2C_SDA 5 // GPIO 5 (SDA)
-#define I2C_SCL 6 // GPIO 6 (SCL)
+// Глобальные объекты
+Adafruit_SSD1306 display(Config::SCREEN_WIDTH, Config::SCREEN_HEIGHT, &Wire, Config::OLED_RESET);
+SensirionI2cScd4x scd4x;
 
-// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
-// The pins for I2C are defined by the Wire-library.
-#define OLED_RESET -1       // Reset pin # (or -1 if sharing Arduino reset pin)
-#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+// FreeRTOS handles
+QueueHandle_t sensorDataQueue;
+TaskHandle_t sensorTaskHandle;
+TaskHandle_t displayTaskHandle;
 
-// macro definitions
-// make sure that we use the proper definition of NO_ERROR
-#ifdef NO_ERROR
-#undef NO_ERROR
-#endif
-#define NO_ERROR 0
+// Структура данных сенсора
+struct SensorData
+{
+  uint16_t co2;
+  float temperature;
+  float humidity;
+};
 
-SensirionI2cScd4x sensor;
+void drawProgress(uint16_t co2Value, uint16_t rangeMin, uint16_t rangeMax, int16_t xPosition)
+{
+  const int16_t BAR_WIDTH = 42;
+  const int16_t BAR_HEIGHT = 5;
+  const int16_t Y_POSITION = 59;
+
+  display.drawRect(xPosition, Y_POSITION, BAR_WIDTH, BAR_HEIGHT, SSD1306_WHITE);
+
+  if (co2Value >= rangeMin && co2Value <= rangeMax)
+  {
+    float percentage = (float)(co2Value - rangeMin) / (rangeMax - rangeMin);
+    int16_t fillWidth = (int16_t)(percentage * (BAR_WIDTH - 2));
+
+    if (fillWidth > (BAR_WIDTH - 2))
+    {
+      fillWidth = BAR_WIDTH - 2;
+    }
+    display.fillRect(xPosition + 1, Y_POSITION + 1, fillWidth, BAR_HEIGHT - 2, SSD1306_WHITE);
+  }
+  else if (co2Value > rangeMax)
+  {
+    display.fillRect(xPosition + 1, Y_POSITION + 1, BAR_WIDTH - 2, BAR_HEIGHT - 2, SSD1306_WHITE);
+  }
+}
+
+void draw(const SensorData &data)
+{
+  Serial.print("CO2 concentration [ppm]: ");
+  Serial.print(data.co2);
+  Serial.println();
+  Serial.print("Temperature [°C]: ");
+  Serial.print(data.temperature);
+  Serial.println();
+  Serial.print("Relative Humidity [RH]: ");
+  Serial.print(data.humidity);
+  Serial.println();
+
+  display.clearDisplay();
+
+  // CO2 value
+  display.setTextSize(4);
+  display.setCursor(5, 40);
+  display.print(data.co2);
+
+  // Temperature
+  display.setTextSize(2);
+  display.setCursor(90, 22);
+  display.print(int(data.temperature));
+  display.print(F("."));
+
+  // Humidity
+  display.setCursor(90, 52);
+  display.print((int)data.humidity);
+
+  // Units and labels
+  display.setTextSize(1);
+
+  // Temperature unit and decimal
+  display.setCursor(118, 14);
+  display.print(F("C"));
+  display.setCursor(118, 23);
+  display.print(((int)(data.temperature * 10)) % 10);
+
+  // Humidity unit
+  display.setCursor(118, 53);
+  display.print(F("%"));
+
+  // CO2 label
+  display.setCursor(5, 14);
+  display.print(F("co2 ppm"));
+
+  // Progress bars
+  drawProgress(data.co2, 0, Config::CO2::RANGE1_MAX, 0);
+  drawProgress(data.co2, Config::CO2::RANGE1_MAX, Config::CO2::RANGE2_MAX, 43);
+  drawProgress(data.co2, Config::CO2::RANGE2_MAX, Config::CO2::RANGE3_MAX, 86);
+
+  display.display();
+}
 
 void printUint64(uint64_t &value)
 {
@@ -34,33 +115,52 @@ void printUint64(uint64_t &value)
   Serial.print((uint32_t)(value & 0xFFFFFFFF), HEX);
 }
 
-int16_t init_sdc41()
+bool initializeDisplay()
+{
+  if (!display.begin(SSD1306_SWITCHCAPVCC, Config::SCREEN_ADDRESS))
+  {
+    Serial.println(F("SSD1306 allocation failed"));
+    return false;
+  }
+
+  display.setTextColor(SSD1306_WHITE);
+  display.setFont(&Org_01);
+  display.setTextWrap(false);
+
+  display.clearDisplay();
+  display.drawBitmap(32, 0, image_co2__2__bits, 64, 64, 1);
+  display.display();
+
+  return true;
+}
+
+int16_t initializeSensor()
 {
   uint64_t serialNumber = 0;
   int16_t error = NO_ERROR;
 
-  sensor.begin(Wire, SCD41_I2C_ADDR_62);
+  scd4x.begin(Wire, SCD41_I2C_ADDR_62);
   delay(30);
 
   // Ensure sensor is in clean state
-  error = sensor.wakeUp();
+  error = scd4x.wakeUp();
   if (error != NO_ERROR)
   {
     return error;
   }
 
-  error = sensor.stopPeriodicMeasurement();
+  error = scd4x.stopPeriodicMeasurement();
   if (error != NO_ERROR)
   {
     return error;
   }
-  error = sensor.reinit();
+  error = scd4x.reinit();
   if (error != NO_ERROR)
   {
     return error;
   }
   // Read out information about the sensor
-  error = sensor.getSerialNumber(serialNumber);
+  error = scd4x.getSerialNumber(serialNumber);
   if (error != NO_ERROR)
   {
     return error;
@@ -73,7 +173,7 @@ int16_t init_sdc41()
   // is required, you should call the respective functions here.
   // Check out the header file for the function definitions.
   // Start periodic measurements (5sec interval)
-  error = sensor.startPeriodicMeasurement();
+  error = scd4x.startPeriodicMeasurement();
   if (error != NO_ERROR)
   {
     return error;
@@ -87,166 +187,118 @@ int16_t init_sdc41()
   return NO_ERROR;
 }
 
-void drawProgress(uint16_t co2Value, uint16_t rangeMin, uint16_t rangeMax, int xPosition)
+void sensorTask(void *parameter)
 {
-  const uint16_t BAR_WIDTH = 42;
-  const uint16_t BAR_HEIGHT = 5;
-  const uint16_t Y_POSITION = 59;
-
-  // Рисуем пустой прямоугольник (контур)
-  display.drawRect(xPosition, Y_POSITION, BAR_WIDTH, BAR_HEIGHT, SSD1306_WHITE);
-
-  // Проверяем, находится ли значение CO2 в текущем диапазоне
-  if (co2Value >= rangeMin && co2Value <= rangeMax)
-  {
-    // Вычисляем процент заполнения для текущего диапазона
-    float percentage = (float)(co2Value - rangeMin) / (rangeMax - rangeMin);
-    // Вычисляем ширину заполненной части
-    uint16_t fillWidth = (uint16_t)(percentage * (BAR_WIDTH - 2));
-
-    if (fillWidth > (BAR_WIDTH - 2)) {
-      fillWidth = BAR_WIDTH - 2;
-    }
-
-    // Рисуем заполненный прямоугольник внутри контура
-    display.fillRect(xPosition + 1, Y_POSITION + 1, fillWidth, BAR_HEIGHT - 2, SSD1306_WHITE);
-  }
-  else if (co2Value > rangeMax)
-  {
-    // Если значение превышает максимум диапазона, заполняем полностью
-    display.fillRect(xPosition + 1, Y_POSITION + 1, BAR_WIDTH - 2, BAR_HEIGHT - 2, SSD1306_WHITE);
-  }
-  // Если значение меньше минимума диапазона, оставляем пустым
-}
-
-void draw(uint16_t co2Concentration, float temperature, float relativeHumidity)
-{
-  display.clearDisplay();
-
-  display.setTextSize(4);
-  display.setCursor(5, 40);
-  display.print(co2Concentration);
-
-  display.setTextSize(2);
-  display.setCursor(90, 22);
-  display.print(int(temperature)); // temperature
-  display.print(F("."));
-
-  display.setCursor(90, 52);
-  display.print((int)relativeHumidity); // relativeHumidity
-
-  display.setTextSize(1);
-  display.setCursor(118, 14);
-  display.print(F("C"));
-
-  display.setCursor(118, 23);
-  display.print(((int)(temperature * 10)) % 10); // temperatue first
-
-  display.setCursor(118, 53);
-  display.print(F("%"));
-
-  display.setCursor(5, 14);
-  display.print(F("co2 ppm"));
-
-  drawProgress(co2Concentration, 0, 800, 0);
-  drawProgress(co2Concentration, 800, 1200, 43);
-  drawProgress(co2Concentration, 1200, 1500, 86);
-
-  display.display();
-}
-
-void setup()
-{
+  int16_t error;
+  SensorData data = {0, 0.0, 0.0};
+  bool dataReady;
   char errorMessage[64];
-  int16_t error = NO_ERROR;
+  TickType_t xLastWakeTime = xTaskGetTickCount();
 
-  Serial.begin(115200);
-  delay(10);
-
-  Wire.begin(I2C_SDA, I2C_SCL);
-
-  error = init_sdc41();
-  if (error != NO_ERROR)
+  while (true)
   {
-    Serial.print("Error initializing SCD41: ");
-    errorToString(error, errorMessage, sizeof errorMessage);
-    Serial.println(errorMessage);
-    for (;;)
-      ; // Don't proceed, loop forever
-  }
-
-  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS))
-  {
-    Serial.println(F("SSD1306 allocation failed"));
-    for (;;)
-      ; // Don't proceed, loop forever
-  }
-
-  display.setTextColor(SSD1306_WHITE);
-  display.setFont(&Org_01);
-  display.setTextWrap(false);
-
-  draw(0, 0.0, 0.0);
-}
-
-void loop()
-{
-  char errorMessage[64];
-  int16_t error = NO_ERROR;
-
-  bool dataReady = false;
-  uint16_t co2Concentration = 0;
-  float temperature = 0.0;
-  float relativeHumidity = 0.0;
-  //
-  // Slow down the sampling to 0.2Hz.
-  //
-  delay(5000);
-  error = sensor.getDataReadyStatus(dataReady);
-  if (error != NO_ERROR)
-  {
-    Serial.print("Error trying to execute getDataReadyStatus(): ");
-    errorToString(error, errorMessage, sizeof errorMessage);
-    Serial.println(errorMessage);
-    return;
-  }
-  while (!dataReady)
-  {
-    delay(100);
-    error = sensor.getDataReadyStatus(dataReady);
+    dataReady = false;
+    error = scd4x.getDataReadyStatus(dataReady);
     if (error != NO_ERROR)
     {
       Serial.print("Error trying to execute getDataReadyStatus(): ");
       errorToString(error, errorMessage, sizeof errorMessage);
       Serial.println(errorMessage);
-      return;
+      // Если ошибка связи с датчиком - просто ждем следующей итерации
+      vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(Config::MEASUREMENT_INTERVAL));
+      continue;
     }
-  }
-  //
-  // If ambient pressure compenstation during measurement
-  // is required, you should call the respective functions here.
-  // Check out the header file for the function definition.
-  error =
-      sensor.readMeasurement(co2Concentration, temperature, relativeHumidity);
-  if (error != NO_ERROR)
-  {
-    Serial.print("Error trying to execute readMeasurement(): ");
-    errorToString(error, errorMessage, sizeof errorMessage);
-    Serial.println(errorMessage);
-    return;
-  }
-  //
-  // Print results in physical units.
-  Serial.print("CO2 concentration [ppm]: ");
-  Serial.print(co2Concentration);
-  Serial.println();
-  Serial.print("Temperature [°C]: ");
-  Serial.print(temperature);
-  Serial.println();
-  Serial.print("Relative Humidity [RH]: ");
-  Serial.print(relativeHumidity);
-  Serial.println();
 
-  draw(co2Concentration, temperature, relativeHumidity);
+    if (dataReady)
+    {
+      error = scd4x.readMeasurement(data.co2, data.temperature, data.humidity);
+      if (error != NO_ERROR)
+      {
+        errorToString(error, errorMessage, sizeof errorMessage);
+        Serial.print("Error reading measurement: ");
+        Serial.println(errorMessage);
+        // При ошибке чтения оставляем предыдущие значения
+      }
+      else
+      {
+        // Данные успешно прочитаны - отправляем в очередь
+        xQueueOverwrite(sensorDataQueue, &data);
+      }
+    }
+
+    // Используем vTaskDelayUntil для точного тайминга
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(dataReady ? Config::MEASUREMENT_INTERVAL : 100));
+  }
+}
+
+void displayTask(void *parameter)
+{
+  SensorData data;
+  SensorData lastDisplayedData = {0, 0.0, 0.0};
+  TickType_t xLastWakeTime = xTaskGetTickCount();
+
+  while (true)
+  {
+    if (xQueueReceive(sensorDataQueue, &data, 0) == pdTRUE)
+    {
+      if (memcmp(&data, &lastDisplayedData, sizeof(SensorData)) != 0)
+      {
+        draw(data);
+        lastDisplayedData = data;
+      }
+    }
+
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(Config::DISPLAY_CHECK_INTERVAL));
+  }
+}
+
+void setup()
+{
+  Serial.begin(115200);
+  delay(10);
+
+  Wire.begin(Config::I2C_SDA, Config::I2C_SCL);
+
+  sensorDataQueue = xQueueCreate(1, sizeof(SensorData));
+  if (!sensorDataQueue)
+  {
+    Serial.println("Failed to create queue");
+    for (;;)
+      ;
+  }
+
+  if (!initializeDisplay())
+  {
+    Serial.println("Display initialization failed");
+    for (;;)
+      ;
+  }
+
+  if (initializeSensor() != NO_ERROR)
+  {
+    Serial.println("Sensor initialization failed");
+    for (;;)
+      ;
+  }
+
+  xTaskCreate(
+      sensorTask,
+      "SensorTask",
+      Config::RTOS::STACK_SIZE,
+      NULL,
+      Config::RTOS::SENSOR_PRIORITY,
+      &sensorTaskHandle);
+
+  xTaskCreate(
+      displayTask,
+      "DisplayTask",
+      Config::RTOS::STACK_SIZE,
+      NULL,
+      Config::RTOS::DISPLAY_PRIORITY,
+      &displayTaskHandle);
+}
+
+void loop()
+{
+  vTaskDelete(NULL);
 }
